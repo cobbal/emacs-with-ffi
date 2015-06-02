@@ -239,12 +239,7 @@ information stored in CIF.
 usage: (ffi-call CIF FN-PTR ARGS...) */)
   (ptrdiff_t argc, Lisp_Object *argv)
 {
-  CHECK_STRING(argv[0]);
-
-  ffi_cif_and_arg_types *cif_and_args = (ffi_cif_and_arg_types*)SDATA(argv[0]);
-  ffi_cif *cif = &cif_and_args->cif;
-  // restore the pointer
-  cif->arg_types = cif_and_args->arg_types;
+  ffi_cif *cif = lisp_to_ptr(argv[0]);
 
   void *obj = lisp_to_ptr(argv[1]);
 
@@ -307,8 +302,7 @@ and return types for calling to and from native code. Returns nil on failure. */
   int arg_count = XFASTINT(Flength(arg_types));
 
   ptrdiff_t caa_len = sizeof(ffi_cif_and_arg_types) + sizeof(ffi_type) * arg_count;
-  Lisp_Object ret = make_uninit_string(caa_len);
-  ffi_cif_and_arg_types *cif_and_args = (void *)SDATA(ret);
+  ffi_cif_and_arg_types *cif_and_args = malloc(caa_len);
 
   Lisp_Object iter;
   int i;
@@ -317,13 +311,12 @@ and return types for calling to and from native code. Returns nil on failure. */
       cif_and_args->arg_types[i] = get_type(XCAR(iter));
     }
 
-
   if (FFI_OK != ffi_prep_cif(&cif_and_args->cif, abi, arg_count, rtype, cif_and_args->arg_types))
     {
       return Qnil;
     }
 
-  return ret;
+  return ptr_to_lisp(cif_and_args);
 }
 
 static void
@@ -347,12 +340,8 @@ callback. Returns nil on failure */)
   (Lisp_Object fn_symbol, Lisp_Object cif)
 {
   CHECK_SYMBOL(fn_symbol); // TODO: make less restrictive and figure out GC
-  CHECK_STRING(cif);
 
-  ffi_cif_and_arg_types *cif_and_args = (ffi_cif_and_arg_types*)SDATA(cif);
-  ffi_cif *real_cif = &cif_and_args->cif;
-  // restore the pointer
-  real_cif->arg_types = cif_and_args->arg_types;
+  ffi_cif *real_cif = lisp_to_ptr(cif);
 
   // FIXME: MEMORY LEAK!
   ffi_closure *closure;
