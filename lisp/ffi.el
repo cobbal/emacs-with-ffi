@@ -5,6 +5,8 @@
   ((and (listp type) (eq (car type) '->))
    (ffi-make-cif (cdr (butlast type)) (car (last type))))))
 
+(defvar ffi--please-dont-garbage-collect-me nil "hack to make things un-gc-able")
+
 (defun ffi-callback (fn-sym type)
  "create a callback that calls FN-SYM with function interface
 described by TYPE (see FFI-GET-OBJ for details on TYPE). Right
@@ -17,6 +19,7 @@ Returns nil on failure"
  (pcase type
   (`(-> . ,_)
    (let ((cif (ffi--cif-from-type type)))
+    (push cif ffi--please-dont-garbage-collect-me)
     (ffi-closure fn-sym cif)))
   (_ (error "unhandled type %s" type))))
 
