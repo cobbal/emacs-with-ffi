@@ -4403,6 +4403,9 @@ extern Lisp_Object directory_files_internal (Lisp_Object, Lisp_Object,
                                              Lisp_Object, Lisp_Object,
                                              bool, Lisp_Object);
 
+/* Defined in ffi.c.  */
+extern void syms_of_ffi (void);
+
 /* Defined in term.c.  */
 extern int *char_ins_del_vector;
 extern void syms_of_term (void);

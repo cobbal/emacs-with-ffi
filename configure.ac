@@ -352,6 +352,8 @@ OPTION_DEFAULT_ON([selinux],[don't compile with SELinux support])
 OPTION_DEFAULT_ON([gnutls],[don't use -lgnutls for SSL/TLS support])
 OPTION_DEFAULT_ON([zlib],[don't compile with zlib decompression support])
 
+OPTION_DEFAULT_ON([libffi],[don't compile with libffi support])
+
 AC_ARG_WITH([file-notification],[AS_HELP_STRING([--with-file-notification=LIB],
  [use a file notification library (LIB one of: yes, gfile, inotify, w32, no)])],
  [ case "${withval}" in
@@ -3250,6 +3252,22 @@ if test "${HAVE_ZLIB}" = "yes"; then
   fi
 fi
 AC_SUBST(LIBZ)
+
+HAVE_LIBFFI=no
+LIBFFI=
+if test "${with_libffi}" != "no"; then
+  AC_CHECK_HEADERS([ffi/ffi.h])
+  OLIBS=$LIBS
+  AC_SEARCH_LIBS([ffi_call], [ffi], [HAVE_LIBFFI=yes])
+  LIBS=$OLIBS
+  case $ac_cv_search_ffi_call in
+    -*) LIBFFI=$ac_cv_search_ffi_call ;;
+  esac
+fi
+if test "${HAVE_LIBFFI}" = "yes"; then
+  AC_DEFINE([HAVE_LIBFFI], 1, [Define to 1 if you have the libffi library (-lffi).])
+fi
+AC_SUBST(LIBFFI)
 
 ### Use -lpng if available, unless '--with-png=no'.
 HAVE_PNG=no

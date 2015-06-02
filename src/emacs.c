@@ -1521,6 +1521,8 @@ Using an Emacs configured with --with-x-toolkit=lucid does not have this problem
 #endif /* HAVE_W32NOTIFY */
 #endif /* WINDOWSNT */
 
+      syms_of_ffi ();
+
       syms_of_profiler ();
 
       keys_of_casefiddle ();
