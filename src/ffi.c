@@ -10,7 +10,7 @@
 typedef struct {
   ffi_cif cif;
   ffi_type *arg_types[0];
-} ffi_cif_and_arg_types;
+} cif_and_arg_types;
 
 INLINE static void *
 lisp_to_ptr(Lisp_Object l)
@@ -301,8 +301,8 @@ and return types for calling to and from native code. Returns nil on failure. */
   ffi_type *rtype = get_type(ret_type);
   int arg_count = XFASTINT(Flength(arg_types));
 
-  ptrdiff_t caa_len = sizeof(ffi_cif_and_arg_types) + sizeof(ffi_type) * arg_count;
-  ffi_cif_and_arg_types *cif_and_args = malloc(caa_len);
+  ptrdiff_t caa_len = sizeof(cif_and_arg_types) + sizeof(ffi_type) * arg_count;
+  cif_and_arg_types *cif_and_args = malloc(caa_len);
 
   Lisp_Object iter;
   int i;
@@ -337,24 +337,17 @@ DEFUN("ffi-closure", Fffi_closure, Sffi_closure, 2, 2, 0,
 interface described in CIF. Despite this function having closure in
 the name, right now it will only accept a symbol as a
 callback. Returns nil on failure */)
-  (Lisp_Object fn_symbol, Lisp_Object cif)
+  (Lisp_Object fn, Lisp_Object cif)
 {
-  CHECK_SYMBOL(fn_symbol); // TODO: make less restrictive and figure out GC
-
   ffi_cif *real_cif = lisp_to_ptr(cif);
 
   // FIXME: MEMORY LEAK!
   ffi_closure *closure;
-  if ((closure = mmap(NULL, sizeof(*closure), PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0)) == (void*)-1)
+  if ((closure = mmap(NULL, sizeof(*closure), PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0)) == (void*)-1)
     {
       return Qnil;
     }
-  if (ffi_prep_closure(closure, real_cif, closure_target, (void*)fn_symbol) != FFI_OK)
-    {
-      munmap(closure, sizeof(*closure));
-      return Qnil;
-    }
-  if (mprotect(closure, sizeof(*closure), PROT_READ | PROT_EXEC) == -1)
+  if (ffi_prep_closure(closure, real_cif, closure_target, (void*)fn) != FFI_OK)
     {
       munmap(closure, sizeof(*closure));
       return Qnil;
@@ -382,6 +375,7 @@ DEFUN("ffi-value-to-string", Fffi_value_to_string, Sffi_value_to_string, 1, 1, 0
   void * ptr = lisp_to_ptr(lptr);
   return make_unibyte_string((void*)&ptr, sizeof(ptr));
 }
+
 
 void
 syms_of_ffi (void)
